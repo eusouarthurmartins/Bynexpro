@@ -915,8 +915,7 @@
 
 
 
-
-                // NOVAS FUNÇÕES DOS AFILIADOS
+        // NOVA FUNÇÃO DOS AFILIADOS ATUALIZADA
         function renderAffiliatesTable() {
             let affBody = document.getElementById('affiliatesBody'); 
             affBody.innerHTML = '';
@@ -929,11 +928,11 @@
             let pageItems = filteredAffiliates.slice((currentAffiliatePage - 1) * itemsPerPage, currentAffiliatePage * itemsPerPage);
 
             if (pageItems.length === 0) { 
-                affBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum afiliado encontrado.</td></tr>'; 
+                affBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum afiliado encontrado.</td></tr>'; 
             } else {
                 pageItems.forEach(a => {
                     let myClients = users.filter(u => u.referredBy === a.id);
-                    let ftds = 0, totalDep = 0, totalWd = 0, totalNetLoss = 0;
+                    let ftds = 0, totalNetLoss = 0;
 
                     myClients.forEach(c => {
                         let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
@@ -941,23 +940,32 @@
                         if (cDep > 0) ftds++;
                         let netLoss = (cDep - cWd) - (c.balance || 0);
                         if (netLoss > 0) totalNetLoss += netLoss;
-                        totalDep += cDep;
-                        totalWd += cWd;
                     });
 
+                    let rate = a.commissionRate || 50; // Padrão 50%
                     let pendingComm = (a.paidCommission || 0);
+                    let statusText = pendingComm > 0 ? 'Em Aberto' : 'Quitado';
                     let badgeClass = pendingComm > 0 ? 'badge-aff-pending' : 'badge-aff-paid';
-                    let statusText = pendingComm > 0 ? 'Pendente' : 'Pago/Zerado';
+                    let pixKey = a.pixKey ? a.pixKey : '<span style="color:var(--text-muted)">Não cadastrada</span>';
+                    let payDate = a.paymentDate ? new Date(a.paymentDate).toLocaleDateString('pt-BR') : '<span style="color:var(--text-muted)">A definir</span>';
 
                     affBody.innerHTML += `<tr>
                         <td>${a.id}</td>
                         <td>${a.name}</td>
                         <td>${myClients.length} (${ftds} FTDs)</td>
-                        <td>R$ ${totalDep.toFixed(2)}</td>
                         <td>R$ ${totalNetLoss.toFixed(2)}</td>
-                        <td><span class="badge ${badgeClass}">R$ ${pendingComm.toFixed(2)}</span><br><span style="color: var(--text-muted); font-size: 10px;">${statusText}</span></td>
                         <td>
-                            ${pendingComm > 0 ? `<button class="btn btn-pay-aff" onclick="payAffiliate('${a.id}')" title="Pagar Comissão (Zera o saldo pendente)"><i class="fas fa-check"></i> Pago</button>` : '-'}
+                            <select class="type-select" onchange="changeAffiliateRate('${a.id}', this.value)">
+                                <option value="50" ${rate==50?'selected':''}>50%</option>
+                                <option value="40" ${rate==40?'selected':''}>40%</option>
+                                <option value="60" ${rate==60?'selected':''}>60%</option>
+                            </select>
+                        </td>
+                        <td><span class="badge ${badgeClass}">R$ ${pendingComm.toFixed(2)}</span><br><span style="color: var(--text-muted); font-size: 10px;">${statusText}</span></td>
+                        <td style="max-width: 150px; word-break: break-all;">${pixKey}</td>
+                        <td>${payDate}<br><input type="date" onchange="setPaymentDate('${a.id}', this.value)" style="font-size:10px; margin-top:4px; border:1px solid var(--border); border-radius:4px; padding:2px;"></td>
+                        <td>
+                            ${pendingComm > 0 ? `<button class="btn btn-pay-aff" onclick="payAffiliate('${a.id}')" title="Dar Baixa (Quitado)"><i class="fas fa-check"></i> Pago</button>` : '-'}
                         </td>
                     </tr>`;
                 });
@@ -965,8 +973,21 @@
             renderPagination('affiliates', currentAffiliatePage, totalPages);
         }
 
+        // NOVAS FUNÇÕES DE CONFIGURAÇÃO DO AFILIADO
+        function changeAffiliateRate(affId, rate) {
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let aff = users.find(u => u.id === affId);
+            if (aff) { aff.commissionRate = parseInt(rate); localStorage.setItem('bynex_users', JSON.stringify(users)); }
+        }
+
+        function setPaymentDate(affId, date) {
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let aff = users.find(u => u.id === affId);
+            if (aff) { aff.paymentDate = date; localStorage.setItem('bynex_users', JSON.stringify(users)); loadAdminData(); }
+        }
+
         function payAffiliate(affId) {
-            if (!confirm('Confirmar que você pagou este afiliado? O saldo de comissão pendente dele será zerado.')) return;
+            if (!confirm('Confirmar o pagamento deste afiliado? O saldo dele será zerado (Quitado).')) return;
             let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
             let aff = users.find(u => u.id === affId);
             if (aff) {
@@ -975,8 +996,6 @@
                 loadAdminData();
             }
         }
-
-
 
 
 
