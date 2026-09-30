@@ -971,8 +971,10 @@ O usuário é responsável por avaliar os riscos envolvidos antes de realizar qu
             if (netLoss < 0) netLoss = 0; // Se o cliente está no lucro, afiliado não ganha nada
 
             // Comissão que o afiliado deveria ter hoje
-            let targetCommission = netLoss * 0.50;
-
+                        // Comissão que o afiliado deveria ter hoje (usa a % definida no admin)
+            let rate = affUser.commissionRate || 50; // Padrão 50 se não tiver definido
+            let targetCommission = netLoss * (rate / 100);
+            
             // O que o afiliado já recebeu na carteira dele
             let affUser = users.find(u => u.id === affId);
             if (!affUser) return;
