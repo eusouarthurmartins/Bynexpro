@@ -945,7 +945,7 @@ O usuário é responsável por avaliar os riscos envolvidos antes de realizar qu
 
 
 
-        // NOVA FUNÇÃO: Calcula e atualiza o RevShare do Afiliado
+               // NOVA FUNÇÃO: Calcula e atualiza o RevShare do Afiliado (Blindada contra pagamento duplo)
         function updateAffiliateRevShare(userId, newBalance) {
             try {
                 let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
@@ -953,35 +953,29 @@ O usuário é responsável por avaliar os riscos envolvidos antes de realizar qu
                 let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
                 
                 let user = users.find(u => u.id === userId);
-                if (!user || !user.referredBy) return; // Se não tem afiliado, ignora
+                if (!user || !user.referredBy) return; 
 
                 let affId = user.referredBy;
-                
-                // Atualiza o saldo do cliente no array temporário para o cálculo exato
                 user.balance = newBalance;
                 
-                // Calcula o Net Loss (Prejuízo Líquido) do cliente
                 let cDep = deposits.filter(d => d.userId === userId && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
                 let cWd = withdrawals.filter(w => w.userId === userId && w.status === 'Aprovado').reduce((s, w) => s + (w.amount || 0), 0);
                 let netLoss = (cDep - cWd) - user.balance;
-                if (netLoss < 0 || isNaN(netLoss)) netLoss = 0; // Se o cliente está no lucro, afiliado não ganha nada
+                if (netLoss < 0 || isNaN(netLoss)) netLoss = 0;
 
-                // O que o afiliado já recebeu na carteira dele
                 let affUser = users.find(u => u.id === affId);
                 if (!affUser) return;
+                let rate = affUser.commissionRate || 50; 
+                let currentEarned = netLoss * (rate / 100);
 
-                // Comissão que o afiliado deveria ter hoje (usa a % definida no admin)
-                let rate = affUser.commissionRate || 50; // Padrão 50 se não tiver definido
-                let targetCommission = netLoss * (rate / 100);
+                if (!affUser.totalEarned) affUser.totalEarned = 0;
+                if (!affUser.totalPaid) affUser.totalPaid = 0;
 
-                if (!affUser.paidCommission) affUser.paidCommission = 0;
+                // Adiciona ou remove do saldo do afiliado, mas NUNCA cobra o que já foi pago
+                let diff = currentEarned - affUser.totalEarned;
+                affUser.balance = (affUser.balance || 0) + diff; 
+                affUser.totalEarned = currentEarned; 
 
-                // Diferença a pagar ou descontar (se o cliente recuperou o dinheiro)
-                let diff = targetCommission - affUser.paidCommission;
-                affUser.balance = (affUser.balance || 0) + diff; // Adiciona ou remove do saldo do afiliado
-                affUser.paidCommission = targetCommission; // Atualiza o registro
-
-                // Salva tudo
                 localStorage.setItem('bynex_users', JSON.stringify(users));
             } catch(e) {
                 console.error("Erro no RevShare:", e);
