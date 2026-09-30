@@ -77,19 +77,33 @@
 
         <div class="admin-container">
             <div class="metrics-grid">
-                <div class="metric-card"><div class="metric-icon blue"><i class="fas fa-users"></i></div><div class="metric-info"><span>Total de Cadastros (FTDs)</span><h3 id="mTotalUsers">0</h3></div></div>
+                <div class="metric-card"><div class="metric-icon blue"><i class="fas fa-users"></i></div><div class="metric-info"><span>Total de Cadastros</span><h3 id="mTotalUsers">0</h3></div></div>
                 <div class="metric-card"><div class="metric-icon yellow"><i class="fas fa-coins"></i></div><div class="metric-info"><span>Depósitos Aprovados</span><h3 id="mTotalDep">R$ 0,00</h3></div></div>
                 <div class="metric-card"><div class="metric-icon red"><i class="fas fa-hand-holding-usd"></i></div><div class="metric-info"><span>Total Sacado</span><h3 id="mTotalWd">R$ 0,00</h3></div></div>
-                <div class="metric-card"><div class="metric-icon green"><i class="fas fa-chart-line"></i></div><div class="metric-info"><span>Sua Comissão (50%)</span><h3 id="mCommission">R$ 0,00</h3></div></div>
+                <div class="metric-card"><div class="metric-icon green"><i class="fas fa-chart-line"></i></div><div class="metric-info"><span>Sua Comissão</span><h3 id="mCommission">R$ 0,00</h3></div></div>
             </div>
 
             <div class="link-box">
-                <div>
+                <div style="flex: 1;">
                     <h3 style="font-size: 16px; margin-bottom: 5px;">Seu Link de Divulgação</h3>
-                    <p style="font-size: 13px; color: var(--text-muted);">Divulgue este link. Quem se cadastrar por ele será seu indicado.</p>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Divulgue este link. Quem se cadastrar por ele será seu indicado.</p>
+                    <div class="link-url" id="affLink" style="margin-bottom: 10px;">https://...</div>
+                    <button class="btn-link" onclick="copyLink()"><i class="fas fa-copy"></i> Copiar Link</button>
                 </div>
-                <div class="link-url" id="affLink">https://...</div>
-                <button class="btn-link" onclick="copyLink()"><i class="fas fa-copy"></i> Copiar Link</button>
+            </div>
+
+            <div class="link-box">
+                <div style="flex: 1;">
+                    <h3 style="font-size: 16px; margin-bottom: 5px;">Dados de Pagamento</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+                        Chave PIX atual: <strong id="affPixDisplay" style="color: var(--text-main);">Não cadastrada</strong><br>
+                        Próximo Pagamento: <strong id="affDateDisplay" style="color: var(--accent-dark);">A definir pela administração</strong>
+                    </p>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="pixInput" placeholder="Digite sua Chave PIX (CPF, Email, Celular...)" style="flex: 1; padding: 10px 15px; background: #f7f9fa; border: 1px solid var(--border); border-radius: 8px; outline: none;">
+                        <button class="btn-link" onclick="savePix()"><i class="fas fa-save"></i> Salvar PIX</button>
+                    </div>
+                </div>
             </div>
 
             <h2 class="section-title"><i class="fas fa-user-friends" style="color: #1877f2; font-size: 16px;"></i> Seus Clientes</h2>
@@ -137,29 +151,46 @@
             let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
             let myClients = users.filter(u => u.referredBy === currentAffId);
             
-            let totalDep = 0, totalWd = 0, totalComm = 0, ftds = 0;
+            let affUser = users.find(u => u.id === currentAffId);
+            let rate = (affUser && affUser.commissionRate) ? affUser.commissionRate : 50;
+            
+            let totalDep = 0, totalWd = 0, ftds = 0;
 
             myClients.forEach(c => {
-                let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + d.amount, 0);
-                let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + w.amount, 0);
+                let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
+                let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + (w.amount || 0), 0);
                 if (cDep > 0) ftds++;
-                
-                let netLoss = (cDep - cWd) - c.balance;
-                if (netLoss < 0) netLoss = 0;
-                
-                let comm = netLoss * 0.50;
-                
                 totalDep += cDep;
                 totalWd += cWd;
-                totalComm += comm;
             });
+            
+            let totalComm = affUser.paidCommission || 0;
 
             document.getElementById('mTotalUsers').innerText = myClients.length + ' (FTDs: ' + ftds + ')';
             document.getElementById('mTotalDep').innerText = totalDep.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('mTotalWd').innerText = totalWd.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('mCommission').innerText = totalComm.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+            if (affUser) {
+                document.getElementById('affPixDisplay').innerText = affUser.pixKey ? affUser.pixKey : 'Não cadastrada';
+                document.getElementById('pixInput').value = affUser.pixKey ? affUser.pixKey : '';
+                document.getElementById('affDateDisplay').innerText = affUser.paymentDate ? new Date(affUser.paymentDate+'T00:00:00').toLocaleDateString('pt-BR') : 'A definir pela administração';
+            }
+
             renderClients();
+        }
+
+        function savePix() {
+            let pix = document.getElementById('pixInput').value.trim();
+            if (!pix) { alert('Digite uma chave PIX válida.'); return; }
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let aff = users.find(u => u.id === currentAffId);
+            if (aff) {
+                aff.pixKey = pix;
+                localStorage.setItem('bynex_users', JSON.stringify(users));
+                alert('Chave PIX salva com sucesso!');
+                loadAffData();
+            }
         }
 
         function renderClients() {
@@ -167,6 +198,9 @@
             let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
             let deposits = JSON.parse(localStorage.getItem('bynex_deposits')) || [];
             let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
+            let affUser = users.find(u => u.id === currentAffId);
+            let rate = (affUser && affUser.commissionRate) ? affUser.commissionRate : 50;
+            
             let myClients = users.filter(u => u.referredBy === currentAffId && (u.id.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)));
             
             let body = document.getElementById('clientsBody');
@@ -174,16 +208,16 @@
 
             body.innerHTML = '';
             myClients.forEach(c => {
-                let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + d.amount, 0);
-                let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + w.amount, 0);
-                let netLoss = (cDep - cWd) - c.balance;
+                let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
+                let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + (w.amount || 0), 0);
+                let netLoss = (cDep - cWd) - (c.balance || 0);
                 let isProfit = netLoss < 0;
                 let displayNetLoss = isProfit ? 'R$ 0,00' : netLoss.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                let comm = (isProfit ? 0 : netLoss * 0.50);
+                let comm = (isProfit ? 0 : netLoss * (rate / 100));
 
                 body.innerHTML += `<tr>
                     <td>${c.id}</td><td>${c.name}</td>
-                    <td>R$ ${cDep.toFixed(2)}</td><td>R$ ${cWd.toFixed(2)}</td><td>R$ ${c.balance.toFixed(2)}</td>
+                    <td>R$ ${cDep.toFixed(2)}</td><td>R$ ${cWd.toFixed(2)}</td><td>R$ ${(c.balance || 0).toFixed(2)}</td>
                     <td><span class="badge ${isProfit ? 'badge-positive' : 'badge-negative'}">${displayNetLoss}</span></td>
                     <td>R$ ${comm.toFixed(2)}</td>
                 </tr>`;
