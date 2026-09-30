@@ -941,6 +941,53 @@ O usuário é responsável por avaliar os riscos envolvidos antes de realizar qu
             showToast(`Ordem ${direction} aberta!`, "success");
         }
 
+
+
+
+
+
+
+
+
+
+
+
+        
+                // NOVA FUNÇÃO: Calcula e atualiza o RevShare do Afiliado
+        function updateAffiliateRevShare(userId) {
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let deposits = JSON.parse(localStorage.getItem('bynex_deposits')) || [];
+            let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
+            
+            let user = users.find(u => u.id === userId);
+            if (!user || !user.referredBy) return; // Se não tem afiliado, ignora
+
+            let affId = user.referredBy;
+            
+            // Calcula o Net Loss (Prejuízo Líquido) do cliente
+            let cDep = deposits.filter(d => d.userId === userId && d.status === 'Aprovado').reduce((s, d) => s + d.amount, 0);
+            let cWd = withdrawals.filter(w => w.userId === userId && w.status === 'Aprovado').reduce((s, w) => s + w.amount, 0);
+            let netLoss = (cDep - cWd) - user.balance;
+            if (netLoss < 0) netLoss = 0; // Se o cliente está no lucro, afiliado não ganha nada
+
+            // Comissão que o afiliado deveria ter hoje
+            let targetCommission = netLoss * 0.50;
+
+            // O que o afiliado já recebeu na carteira dele
+            let affUser = users.find(u => u.id === affId);
+            if (!affUser) return;
+
+            if (!affUser.paidCommission) affUser.paidCommission = 0;
+
+            // Diferença a pagar ou descontar (se o cliente recuperou o dinheiro)
+            let diff = targetCommission - affUser.paidCommission;
+            affUser.balance += diff; // Adiciona ou remove do saldo do afiliado
+            affUser.paidCommission = targetCommission; // Atualiza o registro
+
+            // Salva tudo
+            localStorage.setItem('bynex_users', JSON.stringify(users));
+        }
+
         function checkExpirations() {
             let now = Date.now();
             let expiredTrades = [];
@@ -950,6 +997,14 @@ O usuário é responsável por avaliar os riscos envolvidos antes de realizar qu
                     expiredTrades.push(activeTrades[i]);
                 }
             }
+
+
+
+
+
+
+
+
             
             if (expiredTrades.length > 0) {
                 for (let i = 0; i < expiredTrades.length; i++) {
@@ -967,6 +1022,9 @@ O usuário é responsável por avaliar os riscos envolvidos antes de realizar qu
                         addHistoryItem(trade, "LOSS", -trade.investment, exitPrice);
                         if (trade.asset === activeAsset) showResultPopup(false, -trade.investment, trade, exitPrice);
                     }
+                    
+                    // NOVO: Chama a função para creditar ou descontar a comissão do afiliado
+                    updateAffiliateRevShare(localStorage.getItem('bynex_session'));
                     
                     let index = activeTrades.indexOf(trade);
                     if (index > -1) activeTrades.splice(index, 1);
