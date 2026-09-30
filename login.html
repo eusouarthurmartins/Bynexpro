@@ -291,7 +291,7 @@
             }
         }
 
-        function handleRegister(e) {
+                function handleRegister(e) {
             e.preventDefault();
             let name = document.getElementById('regName').value;
             let email = document.getElementById('regEmail').value;
@@ -327,7 +327,8 @@
                 name: name,
                 email: email,
                 password: pass,
-                balance: 0.00 // Saldo inicial de boas-vindas
+                balance: 0.00,
+                referredBy: new URLSearchParams(window.location.search).get('ref') || null // NOVO: Salva quem indicou
             };
             db.push(newUser);
             saveDB(db);
@@ -337,7 +338,7 @@
             document.getElementById('loginEmail').value = email;
         }
 
-               function handleLogin(e) {
+        function handleLogin(e) {
             e.preventDefault();
             let email = document.getElementById('loginEmail').value;
             let pass = document.getElementById('loginPass').value;
