@@ -156,6 +156,29 @@
         .btn-report { background: var(--bg-light); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-report:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
+
+
+
+
+        .btn-pay-aff { background: var(--green); color: #fff; }
+        .badge-aff-pending { background: #fff8e1; color: var(--accent-dark); }
+        .badge-aff-paid { background: #e6fff4; color: var(--green); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         .proof-img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); }
 
         .add-balance-input { width: 70px; padding: 6px; background: #f7f9fa; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
@@ -364,6 +387,57 @@
                     </table>
                 </div>
                 <div class="pagination" id="usersPagination"></div>
+
+
+
+
+
+
+
+
+
+
+
+
+            </div>
+
+            <!-- NOVO: Tabela de Afiliados -->
+            <h2 class="section-title"><i class="fas fa-handshake" style="color: #d9a700; font-size: 16px;"></i> Gestão de Afiliados</h2>
+            <div class="table-toolbar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchAffiliates" placeholder="Buscar Afiliado por ID ou Nome..." oninput="applyFilters()">
+                </div>
+            </div>
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Afiliado</th>
+                                <th>Nome</th>
+                                <th>Clientes (FTDs)</th>
+                                <th>Volume Deposado</th>
+                                <th>Prejuízo dos Clientes</th>
+                                <th>Comissão (50%)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="affiliatesBody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="affiliatesPagination"></div>
+            </div>
+
+
+
+
+
+
+
+
+
+
             </div>
         </div>
     </div>
@@ -384,6 +458,10 @@
         let currentWithdrawalPage = 1;
 
         let filteredUsers = [];
+
+        let currentAffiliatePage = 1;
+        let filteredAffiliates = [];
+
         let filteredDeposits = [];
         let filteredWithdrawals = [];
 
@@ -457,10 +535,11 @@
 
             applyFilters();
         }
-               function applyFilters() {
+                     function applyFilters() {
             let depQuery = document.getElementById('searchDeposits').value.toLowerCase();
             let wdQuery = document.getElementById('searchWithdrawals').value.toLowerCase();
             let userQuery = document.getElementById('searchUsers').value.toLowerCase();
+            let affQuery = document.getElementById('searchAffiliates').value.toLowerCase();
 
             let deposits = JSON.parse(localStorage.getItem('bynex_deposits')) || [];
             let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
@@ -487,13 +566,19 @@
                 (u.email || '').toLowerCase().includes(userQuery)
             );
 
+            // NOVO: Filtro Afiliados
+            let affiliateIds = new Set(users.map(u => u.referredBy).filter(id => id));
+            filteredAffiliates = users.filter(u => affiliateIds.has(u.id) && ((u.id || '').toLowerCase().includes(affQuery) || (u.name || '').toLowerCase().includes(affQuery)));
+
             currentUserPage = 1;
             currentDepositPage = 1;
             currentWithdrawalPage = 1;
+            currentAffiliatePage = 1;
 
             renderDepositsTable();
             renderWithdrawalsTable();
             renderUsersTable();
+            renderAffiliatesTable();
         }
 
         function renderDepositsTable() {
@@ -655,13 +740,16 @@
             container.insertAdjacentHTML('beforeend', nextBtn);
         }
 
-        function changePage(type, page) {
+               function changePage(type, page) {
             if (type === 'users') {
                 currentUserPage = page;
                 renderUsersTable();
             } else if (type === 'withdrawals') {
                 currentWithdrawalPage = page;
                 renderWithdrawalsTable();
+            } else if (type === 'affiliates') { // NOVO: Paginação dos Afiliados
+                currentAffiliatePage = page;
+                renderAffiliatesTable();
             } else {
                 currentDepositPage = page;
                 renderDepositsTable();
@@ -827,6 +915,66 @@
 
 
 
+
+                // NOVAS FUNÇÕES DOS AFILIADOS
+        function renderAffiliatesTable() {
+            let affBody = document.getElementById('affiliatesBody'); 
+            affBody.innerHTML = '';
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let deposits = JSON.parse(localStorage.getItem('bynex_deposits')) || [];
+            let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
+            
+            let totalPages = Math.ceil(filteredAffiliates.length / itemsPerPage) || 1;
+            if(currentAffiliatePage > totalPages) currentAffiliatePage = totalPages;
+            let pageItems = filteredAffiliates.slice((currentAffiliatePage - 1) * itemsPerPage, currentAffiliatePage * itemsPerPage);
+
+            if (pageItems.length === 0) { 
+                affBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum afiliado encontrado.</td></tr>'; 
+            } else {
+                pageItems.forEach(a => {
+                    let myClients = users.filter(u => u.referredBy === a.id);
+                    let ftds = 0, totalDep = 0, totalWd = 0, totalNetLoss = 0;
+
+                    myClients.forEach(c => {
+                        let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
+                        let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + (w.amount || 0), 0);
+                        if (cDep > 0) ftds++;
+                        let netLoss = (cDep - cWd) - (c.balance || 0);
+                        if (netLoss > 0) totalNetLoss += netLoss;
+                        totalDep += cDep;
+                        totalWd += cWd;
+                    });
+
+                    let pendingComm = (a.paidCommission || 0);
+                    let badgeClass = pendingComm > 0 ? 'badge-aff-pending' : 'badge-aff-paid';
+                    let statusText = pendingComm > 0 ? 'Pendente' : 'Pago/Zerado';
+
+                    affBody.innerHTML += `<tr>
+                        <td>${a.id}</td>
+                        <td>${a.name}</td>
+                        <td>${myClients.length} (${ftds} FTDs)</td>
+                        <td>R$ ${totalDep.toFixed(2)}</td>
+                        <td>R$ ${totalNetLoss.toFixed(2)}</td>
+                        <td><span class="badge ${badgeClass}">R$ ${pendingComm.toFixed(2)}</span><br><span style="color: var(--text-muted); font-size: 10px;">${statusText}</span></td>
+                        <td>
+                            ${pendingComm > 0 ? `<button class="btn btn-pay-aff" onclick="payAffiliate('${a.id}')" title="Pagar Comissão (Zera o saldo pendente)"><i class="fas fa-check"></i> Pago</button>` : '-'}
+                        </td>
+                    </tr>`;
+                });
+            }
+            renderPagination('affiliates', currentAffiliatePage, totalPages);
+        }
+
+        function payAffiliate(affId) {
+            if (!confirm('Confirmar que você pagou este afiliado? O saldo de comissão pendente dele será zerado.')) return;
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let aff = users.find(u => u.id === affId);
+            if (aff) {
+                aff.paidCommission = 0;
+                localStorage.setItem('bynex_users', JSON.stringify(users));
+                loadAdminData();
+            }
+        }
 
 
 
