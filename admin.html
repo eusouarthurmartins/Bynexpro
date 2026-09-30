@@ -417,10 +417,10 @@
                                 <th>ID Afiliado</th>
                                 <th>Nome</th>
                                 <th>Clientes (FTDs)</th>
-                                <th>Volume Deposado</th>
+                                <th>Volume Depositado</th>
                                 <th>Prejuízo dos Clientes</th>
                                 <th>Comissão (50%)</th>
-                                <th>Ações</th>
+                                <th>CHAVE PIX</th>
                             </tr>
                         </thead>
                         <tbody id="affiliatesBody"></tbody>
@@ -915,7 +915,7 @@
 
 
 
-        // NOVA FUNÇÃO DOS AFILIADOS ATUALIZADA
+               // NOVAS FUNÇÕES DOS AFILIADOS (CORRIGIDAS)
         function renderAffiliatesTable() {
             let affBody = document.getElementById('affiliatesBody'); 
             affBody.innerHTML = '';
@@ -942,12 +942,18 @@
                         if (netLoss > 0) totalNetLoss += netLoss;
                     });
 
-                    let rate = a.commissionRate || 50; // Padrão 50%
-                    let pendingComm = (a.paidCommission || 0);
+                    let rate = a.commissionRate || 50; 
+                    
+                    // NOVA LÓGICA: Total gerado - Total já pago
+                    let totalEarned = a.totalEarned || 0;
+                    let totalPaid = a.totalPaid || 0;
+                    let pendingComm = totalEarned - totalPaid;
+                    if (pendingComm < 0) pendingComm = 0;
+
                     let statusText = pendingComm > 0 ? 'Em Aberto' : 'Quitado';
                     let badgeClass = pendingComm > 0 ? 'badge-aff-pending' : 'badge-aff-paid';
                     let pixKey = a.pixKey ? a.pixKey : '<span style="color:var(--text-muted)">Não cadastrada</span>';
-                    let payDate = a.paymentDate ? new Date(a.paymentDate).toLocaleDateString('pt-BR') : '<span style="color:var(--text-muted)">A definir</span>';
+                    let payDate = a.paymentDate ? new Date(a.paymentDate+'T00:00:00').toLocaleDateString('pt-BR') : '<span style="color:var(--text-muted)">A definir</span>';
 
                     affBody.innerHTML += `<tr>
                         <td>${a.id}</td>
@@ -973,7 +979,7 @@
             renderPagination('affiliates', currentAffiliatePage, totalPages);
         }
 
-        // NOVAS FUNÇÕES DE CONFIGURAÇÃO DO AFILIADO
+        // FUNÇÕES DE CONFIGURAÇÃO DO AFILIADO
         function changeAffiliateRate(affId, rate) {
             let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
             let aff = users.find(u => u.id === affId);
@@ -987,18 +993,17 @@
         }
 
         function payAffiliate(affId) {
-            if (!confirm('Confirmar o pagamento deste afiliado? O saldo dele será zerado (Quitado).')) return;
+            if (!confirm('Confirmar o pagamento deste afiliado? O valor será quitado e não poderá ser cobrado novamente.')) return;
             let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
             let aff = users.find(u => u.id === affId);
             if (aff) {
-                aff.paidCommission = 0;
+                let pendingComm = (aff.totalEarned || 0) - (aff.totalPaid || 0);
+                aff.totalPaid = (aff.totalPaid || 0) + pendingComm; // Registra que você já pagou tudo até agora
+                aff.paymentDate = ''; // Limpa a data
                 localStorage.setItem('bynex_users', JSON.stringify(users));
                 loadAdminData();
             }
         }
-
-
-
 
 
 
