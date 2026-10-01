@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bynex Pro - Painel Afiliados</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230b0e11'/><text x='50' y='75' font-size='70' font-family='Arial' font-weight='bold' text-anchor='middle' fill='%23f0b90b'>B</text></svg>">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg-light: #f4f7f6; 
+            --bg-card: #ffffff; 
+            --text-main: #1c1e21; 
+            --text-muted: #65676b; 
+            --accent: #f0b90b; 
+            --accent-dark: #d9a700; 
+            --border: #e3e5e8; 
+            --green: #00c853; 
+            --red: #ff3d57; 
+            --blue: #1877f2;
+            --shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+        body { background-color: var(--bg-light); color: var(--text-main); overflow-x: hidden; font-size: 14px; }
+
+        /* Login Area */
+        .login-area { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: var(--bg-light); }
+        .login-card { background: var(--bg-card); padding: 30px; border-radius: 12px; width: 360px; max-width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; border: 1px solid var(--border); }
+        .login-logo { font-weight: 800; font-size: 24px; margin-bottom: 8px; } .login-logo span { color: var(--accent); }
+        .login-sub { color: var(--text-muted); margin-bottom: 25px; font-size: 13px; }
+        .input-pass { width: 100%; padding: 12px; background: #f7f9fa; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none; transition: 0.2s; }
+        .input-pass:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(240, 185, 11, 0.1); }
+        .btn-pass { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-pass:hover { background: var(--accent-dark); }
+
+        /* App Layout */
+        .app-layout { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 230px; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; transition: transform 0.3s ease; box-shadow: 2px 0 10px rgba(0,0,0,0.02); }
+        .sidebar-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-logo { font-weight: 800; font-size: 18px; color: var(--text-main); } .sidebar-logo span { color: var(--accent); }
+        .close-sidebar { display: none; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+        .sidebar-nav { flex: 1; padding: 15px 0; overflow-y: auto; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: 0.2s; border-left: 3px solid transparent; cursor: pointer; }
+        .nav-item i { width: 16px; text-align: center; font-size: 13px; }
+        .nav-item:hover { background: #f7f9fa; color: var(--text-main); }
+        .nav-item.active { background: rgba(240, 185, 11, 0.05); color: var(--accent-dark); border-left-color: var(--accent); font-weight: 600; }
+        .sidebar-footer { padding: 15px 20px; border-top: 1px solid var(--border); }
+        .btn-logout { width: 100%; padding: 8px; background: #f7f9fa; border: 1px solid var(--border); border-radius: 6px; color: var(--red); font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 12px; }
+        .btn-logout:hover { background: #ffeef0; }
+
+        /* Main Content */
+        .main-content { flex: 1; margin-left: 230px; padding: 20px 25px; transition: margin 0.3s; min-width: 0; }
+        .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header-title h1 { font-size: 20px; font-weight: 700; }
+        .header-title p { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+        .hamburger { display: none; background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; }
+        
+        /* Header Profile */
+        .header-profile { display: flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; position: relative; }
+        .header-profile img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .header-profile span { font-size: 12px; font-weight: 600; color: var(--text-main); }
+        .crown-icon { position: absolute; top: -8px; right: -4px; color: var(--accent); font-size: 14px; transform: rotate(15deg); }
+
+        /* Cards */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .metric-card { background: var(--bg-card); padding: 15px; border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .metric-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+        .metric-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+        .metric-icon.blue { background: #e7f0ff; color: var(--blue); }
+        .metric-icon.yellow { background: #fff8e1; color: var(--accent-dark); }
+        .metric-icon.green { background: #e6fff4; color: var(--green); }
+        .metric-icon.red { background: #ffeef0; color: var(--red); }
+        .metric-info span { display: block; color: var(--text-muted); font-size: 10px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .metric-info h3 { font-size: 16px; font-weight: 700; }
+
+        /* Boxes (Link & Payment) */
+        .grid-2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .link-box { background: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 10px; }
+        .info-box h3 { font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .info-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+        .link-url { background: #f7f9fa; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 11px; color: var(--blue); border: 1px dashed var(--border); word-break: break-all; margin-bottom: 10px; }
+        .btn-link { background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; text-decoration: none; font-size: 11px; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-link:hover { background: var(--accent-dark); }
+        .input-custom { width: 100%; padding: 8px 12px; background: #f7f9fa; border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); outline: none; font-size: 12px; }
+        .input-custom:focus { border-color: var(--accent); }
+
+        /* Tables */
+        .section-title { font-size: 15px; font-weight: 700; margin: 25px 0 12px; display: flex; align-items: center; gap: 8px; }
+        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+        .table-toolbar { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .search-box { position: relative; flex: 1; max-width: 250px; }
+        .search-box input { width: 100%; padding: 6px 10px 6px 30px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-size: 12px; outline: none; }
+        .search-box input:focus { border-color: var(--accent); }
+        .search-box i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f7f9fa; padding: 8px 12px; text-align: left; font-size: 10px; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+        td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-main); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f9fbfa; }
+
+        .badge { padding: 3px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; display: inline-block; }
+        .badge-positive { background: #e6fff4; color: var(--green); }
+        .badge-negative { background: #ffeef0; color: var(--red); }
+
+        /* Rules Box */
+        .rules-box { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 10px; line-height: 1.6; color: var(--text-muted); font-size: 13px; }
+        .rules-box h3 { color: var(--text-main); margin-bottom: 8px; font-size: 14px; }
+        .rules-box ul { padding-left: 18px; font-size: 12px; }
+
+        /* Rewards Section */
+        .rewards-container { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .progress-header h3 { font-size: 13px; }
+        .progress-header span { font-size: 12px; font-weight: 700; color: var(--accent-dark); }
+        .progress-bar-bg { width: 100%; height: 18px; background: #f0f2f5; border-radius: 9px; overflow: hidden; margin-bottom: 15px; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 9px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: #000; font-size: 10px; font-weight: 700; transition: width 1s ease-in-out; width: 0%; }
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+        .reward-card { border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; padding: 8px; transition: 0.2s; gap: 12px; }
+        .reward-card.completed { border-color: var(--green); background: #f0fff8; }
+        .reward-card img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+        .reward-info { flex: 1; min-width: 0; }
+        .reward-info h4 { font-size: 13px; margin-bottom: 2px; }
+        .reward-info p { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+        .tier-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-right: 4px; }
+        .tier-bronze { background: #ffe0cc; color: #cd7f32; }
+        .tier-prata { background: #e0e0e0; color: #757575; }
+        .tier-ouro { background: #fff8e1; color: #d9a700; }
+        .tier-diamante { background: #e3f2fd; color: #1877f2; }
+        .reward-status { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #f0f2f5; color: var(--text-muted); }
+        .reward-card.completed .reward-status { background: #e6fff4; color: var(--green); }
+        .reward-notice { margin-top: 15px; padding: 10px; background: #fff8e1; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent-dark); font-weight: 600; font-size: 12px; text-align: center; }
+
+        /* Pagination */
+        .pagination { display: flex; gap: 5px; justify-content: center; align-items: center; padding: 10px 0; flex-wrap: wrap; }
+        .page-btn { background: var(--bg-light); border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--text-main); }
+        .page-btn:hover:not(:disabled) { background: #f7f9fa; }
+        .page-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* WhatsApp Floating Button */
+        .wa-fab { position: fixed; bottom: 20px; right: 20px; width: 45px; height: 45px; background-color: #25D366; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 999; text-decoration: none; transition: transform 0.2s; }
+        .wa-fab:hover { transform: scale(1.1); color: #fff; }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .grid-2-cols { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 250px; }
+            .sidebar.active { transform: translateX(0); box-shadow: 0 0 50px rgba(0,0,0,0.1); }
+            .main-content { margin-left: 0; padding: 15px; }
+            .hamburger { display: block; }
+            .close-sidebar { display: block; }
+            .header-title h1 { font-size: 18px; }
+            .header-profile { display: none; } 
+            .table-toolbar { flex-direction: column; align-items: stretch; }
+            .search-box { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Area -->
+    <div id="loginArea" class="login-area">
+        <div class="login-card">
+            <div class="login-logo">BYNEX <span>Afiliados</span></div>
+            <h1 style="font-size: 18px; margin-bottom: 8px;">Bem-vindo de volta</h1>
+            <p class="login-sub">Digite o seu ID de usuário para acessar.</p>
+            <input type="text" class="input-pass" id="affId" placeholder="Ex: BYX12345" onkeyup="if(event.key==='Enter') checkAffiliate()">
+            <button class="btn-pass" onclick="checkAffiliate()">Acessar Painel</button>
+        </div>
+    </div>
+
+    <!-- App Layout -->
+    <div id="adminArea" style="display:none;" class="app-layout">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">BYNEX <span>PRO</span></div>
+                <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" onclick="setActiveNav(this)"><i class="fas fa-th-large"></i> Dashboard</a>
+                <a class="nav-item" onclick="scrollToSection('sec-links'); setActiveNav(this)"><i class="fas fa-link"></i> Divulgação & PIX</a>
+                <a class="nav-item" onclick="scrollToSection('sec-rewards'); setActiveNav(this)"><i class="fas fa-trophy"></i> Premiações</a>
+                <a class="nav-item" onclick="scrollToSection('sec-clients'); setActiveNav(this)"><i class="fas fa-users"></i> Seus Clientes</a>
+                <a class="nav-item" onclick="scrollToSection('sec-history'); setActiveNav(this)"><i class="fas fa-history"></i> Pagamentos</a>
+                <a class="nav-item" onclick="scrollToSection('sec-rules'); setActiveNav(this)"><i class="fas fa-gavel"></i> Regras</a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="logoutAff()"><i class="fas fa-sign-out-alt"></i> Sair da Conta</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="main-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <div class="header-title">
+                        <h1>Painel do Afiliado</h1>
+                        <p>Acompanhe seus indicados e comissões.</p>
+                    </div>
+                </div>
+                
+                <div class="header-profile">
+                    <i class="crown-icon fas fa-crown"></i>
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=BYNEX&backgroundColor=f0b90b&textColor=000000" alt="User">
+                    <span id="headerAffId">ID: ...</span>
+                </div>
+            </header>
+
+            <!-- Section: Dashboard -->
+            <section id="sec-dashboard">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon blue"><i class="fas fa-users"></i></div>
+                        <div class="metric-info"><span>Total Cadastros</span><h3 id="mTotalUsers">0</h3></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon yellow"><i class="fas fa-coins"></i></div>
+                        <div class="metric-info"><span>Depósitos Aprovados</span><h3 id="mTotalDep">R$ 0,00</h3></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon green"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="metric-info"><span>Saldo a Receber</span><h3 id="mPending" style="color: var(--green);">R$ 0,00</h3></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon red"><i class="fas fa-check-circle"></i></div>
+                        <div class="metric-info"><span>Total Já Recebido</span><h3 id="mTotalReceived">R$ 0,00</h3></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Links & Payment -->
+            <section id="sec-links">
+                <div class="grid-2-cols">
+                    <div class="link-box info-box">
+                        <h3><i class="fas fa-share-alt" style="color: var(--blue);"></i> Link de Divulgação</h3>
+                        <p>Divulgue este link. Quem se cadastrar por ele será seu indicado automaticamente.</p>
+                        <div class="link-url" id="affLink">https://...</div>
+                        <button class="btn-link" onclick="copyLink()"><i class="fas fa-copy"></i> Copiar Link</button>
+                    </div>
+
+                    <div class="link-box info-box">
+                        <h3><i class="fas fa-wallet" style="color: var(--accent-dark);"></i> Dados de Pagamento</h3>
+                        <p>
+                            Chave PIX atual: <strong id="affPixDisplay" style="color: var(--text-main);">Não cadastrada</strong><br>
+                            Próximo Pagamento: <strong id="affDateDisplay" style="color: var(--accent-dark);">A definir</strong>
+                        </p>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="pixInput" class="input-custom" placeholder="Sua Chave PIX">
+                            <button class="btn-link" onclick="savePix()"><i class="fas fa-save"></i> Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Rewards -->
+            <section id="sec-rewards">
+                <h2 class="section-title"><i class="fas fa-trophy" style="color: var(--accent-dark); font-size: 15px;"></i> Premiações por Volume</h2>
+                <div class="rewards-container">
+                    <div class="progress-header">
+                        <h3>Progresso da Próxima Meta:</h3>
+                        <span id="nextTierText">Carregando...</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progressBarFill">0%</div>
+                    </div>
+                    
+                    <div class="rewards-grid" id="rewardsGrid">
+                        <!-- Cards gerado via JS -->
+                    </div>
+
+                    <div class="reward-notice">
+                        <i class="fas fa-info-circle"></i> Ao bater a meta, fale com o seu gerente para resgatar seu prêmio!
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Clients -->
+            <section id="sec-clients">
+                <h2 class="section-title"><i class="fas fa-user-friends" style="color: var(--blue); font-size: 15px;"></i> Seus Clientes</h2>
+                <div class="table-card">
+                    <div class="table-toolbar">
+                        <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchClients" placeholder="Buscar por ID do cliente..." oninput="renderClients()"></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>ID Cliente</th><th>Nome</th><th>Depósitos Reais</th><th>Saques</th><th>Saldo Atual</th><th>Lucro/Prejuízo</th><th>Sua Comissão</th></tr></thead>
+                            <tbody id="clientsBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="clientsPagination"></div>
+                </div>
+            </section>
+
+            <!-- Section: History -->
+            <section id="sec-history">
+                <h2 class="section-title"><i class="fas fa-history" style="color: var(--green); font-size: 15px;"></i> Histórico de Pagamentos</h2>
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Data do Pagamento</th><th>Valor Pago</th><th>Status</th></tr></thead>
+                            <tbody id="historyBody">
+                                <tr><td colspan="3" style="text-align: center; padding: 15px; color: var(--text-muted);">Nenhum pagamento recebido ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="historyPagination"></div>
+                </div>
+            </section>
+
+            <!-- Section: Rules -->
+            <section id="sec-rules">
+                <h2 class="section-title"><i class="fas fa-gavel" style="color: var(--red); font-size: 15px;"></i> Regras do Programa</h2>
+                <div class="rules-box">
+                    <h3>Como funciona o RevShare?</h3>
+                    <p>Você ganha uma porcentagem do prejuízo líquido dos clientes que indicar. O cálculo é feito em tempo real:</p>
+                    <ul style="margin-top: 5px; margin-bottom: 15px;">
+                        <li><strong>Prejuízo Líquido:</strong> Depósitos Reais - Saques - Saldo Atual do Cliente.</li>
+                        <li>Se o cliente estiver no lucro, sua comissão não é negativa, ela apenas zera.</li>
+                        <li>Comissões sobre depósitos fictícios não são contabilizadas.</li>
+                    </ul>
+                    <h3>Pagamentos</h3>
+                    <ul style="margin-top: 5px;">
+                        <li>Os pagamentos são realizados via PIX para a chave cadastrada.</li>
+                        <li>A data de pagamento será definida pela administração.</li>
+                        <li>Ao receber, o valor sai de "Saldo a Receber" e vai para o Histórico.</li>
+                    </ul>
+                </div>
+            </section>
+            
+            <div style="margin-top: 30px; text-align: center; color: var(--text-muted); font-size: 11px; border-top: 1px solid var(--border); padding-top: 15px;">
+                BYNEX PRO AFFILIATES &copy; 2024
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão Flutuante WhatsApp -->
+    <a href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20Painel%20de%20Afiliados%20Bynex" target="_blank" class="wa-fab" title="Suporte WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script>
+        // FUNÇÕES DE UI
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+        function setActiveNav(el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active');
+        }
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // LÓGICA ORIGINAL INTACTA
+        let currentAffId = '';
+        const itemsPerPage = 10;
+        let currentClientPage = 1;
+        let currentHistoryPage = 1;
+
+        function checkAffiliate() {
+            let id = document.getElementById('affId').value.trim();
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            if (users.find(u => u.id === id)) {
+                currentAffId = id;
+                localStorage.setItem('bynex_aff_session', id);
+                document.getElementById('loginArea').style.display = 'none';
+                document.getElementById('adminArea').style.display = 'flex';
+                document.getElementById('headerAffId').innerText = 'ID: ' + id;
+                loadAffData();
+            } else {
+                alert('ID de afiliado não encontrado!');
+            }
+        }
+
+        function logoutAff() {
+            localStorage.removeItem('bynex_aff_session');
+            location.reload();
+        }
+
+        function loadAffData() {
+            document.getElementById('affLink').innerText = window.location.origin + window.location.pathname.replace('afiliados.html', 'login.html') + '?ref=' + currentAffId;
+            
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let deposits = JSON.parse(localStorage.getItem('bynex_deposits')) || [];
+            let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
+            let myClients = users.filter(u => u.referredBy === currentAffId);
+            
+            let affUser = users.find(u => u.id === currentAffId);
+            let rate = (affUser && affUser.commissionRate) ? affUser.commissionRate : 50;
+            
+            let totalDep = 0, totalWd = 0, ftds = 0, totalNetLoss = 0;
+
+            myClients.forEach(c => {
+                let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
+                let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + (w.amount || 0), 0);
+                if (cDep > 0) ftds++;
+                totalDep += cDep;
+                totalWd += cWd;
+                
+                let netLoss = (cDep - cWd) - (c.balance || 0);
+                if (netLoss > 0) totalNetLoss += netLoss;
+            });
+            
+            let dynamicEarned = totalNetLoss * (rate / 100);
+            let totalPaid = affUser.totalPaid || 0;
+            let pendingComm = dynamicEarned - totalPaid;
+            if (pendingComm < 0) pendingComm = 0;
+
+            document.getElementById('mTotalUsers').innerText = myClients.length + ' (FTDs: ' + ftds + ')';
+            document.getElementById('mTotalDep').innerText = totalDep.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('mPending').innerText = pendingComm.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('mTotalReceived').innerText = totalPaid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // Renderiza Histórico de Pagamentos (Com Paginação)
+            let historyBody = document.getElementById('historyBody');
+            let historyData = (affUser.paymentHistory || []).reverse();
+            let totalHistoryPages = Math.ceil(historyData.length / itemsPerPage) || 1;
+            if(currentHistoryPage > totalHistoryPages) currentHistoryPage = totalHistoryPages;
+            let pageHistoryItems = historyData.slice((currentHistoryPage - 1) * itemsPerPage, currentHistoryPage * itemsPerPage);
+
+            if (pageHistoryItems.length > 0) {
+                historyBody.innerHTML = '';
+                pageHistoryItems.forEach(p => {
+                    historyBody.innerHTML += `<tr>
+                        <td>${p.date}</td>
+                        <td style="color: var(--green); font-weight: 700;">+ R$ ${p.amount.toFixed(2)}</td>
+                        <td><span class="badge badge-positive">Pago</span></td>
+                    </tr>`;
+                });
+            } else {
+                historyBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 15px; color: var(--text-muted);">Nenhum pagamento recebido ainda.</td></tr>';
+            }
+            renderPagination('history', currentHistoryPage, totalHistoryPages);
+
+            if (affUser) {
+                document.getElementById('affPixDisplay').innerText = affUser.pixKey ? affUser.pixKey : 'Não cadastrada';
+                document.getElementById('pixInput').value = affUser.pixKey ? affUser.pixKey : '';
+                document.getElementById('affDateDisplay').innerText = affUser.paymentDate ? new Date(affUser.paymentDate+'T00:00:00').toLocaleDateString('pt-BR') : 'A definir pela administração';
+            }
+
+            renderRewards(totalDep);
+            renderClients();
+        }
+
+        function renderRewards(totalDepVolume) {
+            const tiers = [
+                { target: 100000, name: 'Notebook', tier: 'Bronze', img: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?auto=format&fit=crop&w=100&q=80' },
+                { target: 300000, name: 'iPhone', tier: 'Prata', img: 'https://images.unsplash.com/photo-1592286927505-1def25115558?auto=format&fit=crop&w=100&q=80' },
+                 { target: 500000, name: 'PlayStation 5', tier: 'Ouro', img: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=100&q=80' },
+                { target: 1000000, name: 'Viagem dos Sonhos', tier: 'Diamante', img: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=100&q=80' }
+            ];
+
+            let grid = document.getElementById('rewardsGrid');
+            grid.innerHTML = '';
+
+            let nextTierIndex = tiers.findIndex(t => totalDepVolume < t.target);
+            let currentTarget = nextTierIndex !== -1 ? tiers[nextTierIndex] : null;
+            let prevTarget = nextTierIndex > 0 ? tiers[nextTierIndex - 1].target : 0;
+
+            let progressBar = document.getElementById('progressBarFill');
+            let progressText = document.getElementById('nextTierText');
+            
+            if (currentTarget) {
+                let progress = ((totalDepVolume - prevTarget) / (currentTarget.target - prevTarget)) * 100;
+                if (progress > 100) progress = 100;
+                if (progress < 0) progress = 0;
+                progressBar.style.width = progress.toFixed(1) + '%';
+                progressBar.innerText = progress.toFixed(1) + '%';
+                progressText.innerText = `Faltam R$ ${(currentTarget.target - totalDepVolume).toLocaleString('pt-BR', {minimumFractionDigits: 2})} para ganhar ${currentTarget.tier} (${currentTarget.name})`;
+            } else {
+                progressBar.style.width = '100%';
+                progressBar.innerText = '100%';
+                progressText.innerText = 'Parabéns! Você bateu todas as metas!';
+            }
+
+            tiers.forEach(tier => {
+                let isCompleted = totalDepVolume >= tier.target;
+                let cardClass = isCompleted ? 'reward-card completed' : 'reward-card';
+                let statusText = isCompleted ? 'Concluído' : `Meta: R$ ${tier.target.toLocaleString('pt-BR')}`;
+                
+                grid.innerHTML += `
+                    <div class="${cardClass}">
+                        <img src="${tier.img}" alt="${tier.name}">
+                        <div class="reward-info">
+                            <span class="tier-badge tier-${tier.tier.toLowerCase()}">${tier.tier}</span>
+                            <h4>${tier.name}</h4>
+                            <p>Volume: R$ ${tier.target.toLocaleString('pt-BR')}</p>
+                            <span class="reward-status">${statusText}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function savePix() {
+            let pix = document.getElementById('pixInput').value.trim();
+            if (!pix) { alert('Digite uma chave PIX válida.'); return; }
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let aff = users.find(u => u.id === currentAffId);
+            if (aff) {
+                aff.pixKey = pix;
+                localStorage.setItem('bynex_users', JSON.stringify(users));
+                alert('Chave PIX salva com sucesso!');
+                loadAffData();
+            }
+        }
+
+        function renderClients() {
+            let query = document.getElementById('searchClients').value.toLowerCase();
+            let users = JSON.parse(localStorage.getItem('bynex_users')) || [];
+            let deposits = JSON.parse(localStorage.getItem('bynex_deposits')) || [];
+            let withdrawals = JSON.parse(localStorage.getItem('bynex_withdrawals')) || [];
+            let affUser = users.find(u => u.id === currentAffId);
+            let rate = (affUser && affUser.commissionRate) ? affUser.commissionRate : 50;
+            
+            let myClients = users.filter(u => u.referredBy === currentAffId && (u.id.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)));
+            
+            let body = document.getElementById('clientsBody');
+            let totalPages = Math.ceil(myClients.length / itemsPerPage) || 1;
+            if(currentClientPage > totalPages) currentClientPage = totalPages;
+            let pageItems = myClients.slice((currentClientPage - 1) * itemsPerPage, currentClientPage * itemsPerPage);
+
+            if (pageItems.length === 0) { 
+                body.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 15px; color: var(--text-muted);">Nenhum cliente encontrado.</td></tr>'; 
+            } else {
+                body.innerHTML = '';
+                pageItems.forEach(c => {
+                    let cDep = deposits.filter(d => d.userId === c.id && d.status === 'Aprovado').reduce((s, d) => s + (d.amount || 0), 0);
+                    let cWd = withdrawals.filter(w => w.userId === c.id && w.status === 'Aprovado').reduce((s, w) => s + (w.amount || 0), 0);
+                    let netLoss = (cDep - cWd) - (c.balance || 0);
+                    let isProfit = netLoss < 0;
+                    let displayNetLoss = isProfit ? 'R$ 0,00' : netLoss.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    let comm = (isProfit ? 0 : netLoss * (rate / 100));
+
+                    body.innerHTML += `<tr>
+                        <td>${c.id}</td><td>${c.name}</td>
+                        <td>R$ ${cDep.toFixed(2)}</td><td>R$ ${cWd.toFixed(2)}</td><td>R$ ${(c.balance || 0).toFixed(2)}</td>
+                        <td><span class="badge ${isProfit ? 'badge-positive' : 'badge-negative'}">${displayNetLoss}</span></td>
+                        <td>R$ ${comm.toFixed(2)}</td>
+                    </tr>`;
+                });
+            }
+            renderPagination('clients', currentClientPage, totalPages);
+        }
+
+        function renderPagination(type, currentPage, totalPages) {
+            let containerId = type === 'clients' ? 'clientsPagination' : 'historyPagination';
+            let container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+            
+            container.insertAdjacentHTML('beforeend', `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage - 1})">Anterior</button>`);
+            
+            for (let i = 1; i <= totalPages; i++) {
+                let activeClass = i === currentPage ? 'active' : '';
+                container.insertAdjacentHTML('beforeend', `<button class="page-btn ${activeClass}" onclick="changePage('${type}', ${i})">${i}</button>`);
+            }
+            
+            container.insertAdjacentHTML('beforeend', `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage + 1})">Próximo</button>`);
+        }
+
+        function changePage(type, page) {
+            if (type === 'clients') {
+                currentClientPage = page;
+                renderClients();
+            } else {
+                currentHistoryPage = page;
+                loadAffData(); 
+            }
+        }
+
+        function copyLink() {
+            let link = document.getElementById('affLink').innerText;
+            navigator.clipboard.writeText(link).then(() => alert('Link copiado!'));
+        }
+
+        window.onload = function() {
+            let session = localStorage.getItem('bynex_aff_session');
+            if (session) { document.getElementById('affId').value = session; checkAffiliate(); }
+        };
+    </script>
+</body>
+</html>
